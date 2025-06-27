@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from contextlib import asynccontextmanager
 import logging
 
-from processors import story_generator, image_processor, audio_processor, content_filter
+from processors import story_generator, image_processor_gemini as image_processor, audio_processor, content_filter
 from utils.db import update_story_status
 from utils.progressive_save import save_story_metadata, save_page_progressively, mark_story_completed
 
