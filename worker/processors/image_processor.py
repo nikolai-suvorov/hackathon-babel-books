@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 if os.getenv("USE_MOCK_STORIES") != "true":
     genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
-async def generate_story_images(pages: List[Dict], age_group: str) -> List[Dict]:
+async def generate_story_images(pages: List[Dict], age_group: str, story_context: Dict = None) -> List[Dict]:
     """Generate images for each page of the story"""
     images = []
     
@@ -42,9 +42,15 @@ async def generate_story_images(pages: List[Dict], age_group: str) -> List[Dict]
                     page.get("text", "")[:30]
                 )
             else:
-                # Try to use Gemini's image generation
+                # Try to use Gemini's image generation with full context
                 try:
-                    image_data = await generate_with_gemini(styled_prompt, age_group)
+                    image_data = await generate_with_gemini(
+                        page_prompt=styled_prompt,
+                        age_group=age_group,
+                        story_context=story_context,
+                        page_text=page.get("text", ""),
+                        page_number=page["pageNumber"]
+                    )
                 except Exception as e:
                     logger.warning(f"Gemini image generation failed, using placeholder: {str(e)}")
                     image_data = create_placeholder_image(
@@ -283,24 +289,48 @@ def draw_object(draw, obj_type: str, description: str):
                 points.append((px, py))
             draw.polygon(points, fill=(255, 255, 100))
 
-async def generate_with_gemini(prompt: str, age_group: str) -> str:
-    """Generate an image using Gemini's capabilities"""
+async def generate_with_gemini(page_prompt: str, age_group: str, story_context: Dict = None, 
+                              page_text: str = "", page_number: int = 1) -> str:
+    """Generate an image using Gemini's capabilities with full story context"""
     try:
         # Use Gemini to create a detailed scene description
-        text_model = genai.GenerativeModel('gemini-2.5-flash')
+        text_model = genai.GenerativeModel('gemini-1.5-flash-latest')
+        
+        # Build comprehensive context
+        story_info = ""
+        if story_context:
+            story_title = story_context.get('title', 'Children\'s Story')
+            story_tone = story_context.get('metadata', {}).get('tone', 'playful')
+            story_info = f"""
+Story Title: {story_title}
+Story Theme: {story_tone}
+Target Age: {age_group}
+"""
         
         # Create a detailed prompt for scene description
-        scene_prompt = f"""Describe a children's book illustration scene in vivid detail:
-        
-        Scene: {prompt}
-        Age group: {age_group}
-        
-        Provide specific details about:
-        1. Main character appearance and colors
-        2. Background setting and environment
-        3. Key objects and their positions
-        4. Color palette (specific colors)
-        5. Mood and atmosphere
+        scene_prompt = f"""Create a children's book illustration for this specific scene.
+
+{story_info}
+
+CURRENT PAGE (Page {page_number}):
+Text: {page_text}
+Scene Description: {page_prompt}
+
+IMPORTANT REQUIREMENTS:
+1. NO TEXT OR WORDS in the image - this is purely visual
+2. Style should match {get_age_appropriate_style(age_group)}
+3. Include ALL characters mentioned in the scene together in ONE unified image
+4. Create a single, cohesive scene (NOT layered or separated panels)
+5. Use bright, engaging colors appropriate for {age_group}
+6. Make characters expressive and emotionally engaging
+7. Ensure the scene directly illustrates what's happening in the text
+
+Describe the illustration in detail, including:
+1. All characters' exact appearance, expressions, and positions
+2. The complete environment/background setting
+3. Specific colors for everything
+4. The overall mood and atmosphere
+5. Key visual elements that support the story
         
         Keep it child-friendly, bright, and engaging."""
         

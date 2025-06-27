@@ -93,7 +93,8 @@ async def process_jobs():
                         try:
                             image_list = await image_processor.generate_story_images(
                                 [page],  # Process single page
-                                age_group=story_data_from_job.get("childAge", "3-4 years")
+                                age_group=story_data_from_job.get("childAge", "3-4 years"),
+                                story_context=story_data  # Pass full story context
                             )
                             image_data = image_list[0] if image_list else None
                         except Exception as e:
