@@ -17,7 +17,6 @@ services:
   - type: worker
     name: babel-books-worker
     runtime: python
-    plan: free
     buildCommand: cd worker && pip install -r requirements.txt
     startCommand: cd worker && python main.py
     envVars:
