@@ -9,6 +9,10 @@ interface StoryPage {
   text: string;
   imagePrompt: string;
   interactiveElement?: string;
+  image?: {
+    imageData: string;
+    format: string;
+  };
   audio?: {
     audioData: string;
     duration: number;
