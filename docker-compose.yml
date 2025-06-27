@@ -1,0 +1,73 @@
+
+services:
+  # MongoDB for local development
+  mongodb:
+    image: mongo:7.0
+    container_name: babel-books-mongo
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: babel-books
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - babel-books-network
+
+  # LocalStack for S3 mock
+  localstack:
+    image: localstack/localstack:3.0
+    container_name: babel-books-localstack
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=s3
+      - DEBUG=0
+      - AWS_DEFAULT_REGION=us-east-1
+    volumes:
+      - ./localstack-data:/var/lib/localstack
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - babel-books-network
+
+  # Stripe Mock
+  stripe-mock:
+    image: stripe/stripe-mock:latest
+    container_name: babel-books-stripe
+    ports:
+      - "12111:12111"
+    networks:
+      - babel-books-network
+
+  # Python Worker (for local development)
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile.dev
+    container_name: babel-books-worker
+    volumes:
+      - ./worker:/app
+      - /app/__pycache__
+    environment:
+      - MONGODB_URI=mongodb://admin:password@mongodb:27017/babel-books?authSource=admin
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-mock-key}
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_ENDPOINT_URL=http://localstack:4566
+      - S3_BUCKET_NAME=babel-books-assets
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - mongodb
+      - localstack
+    networks:
+      - babel-books-network
+    ports:
+      - "8000:8000"
+
+volumes:
+  mongo-data:
+
+networks:
+  babel-books-network:
+    driver: bridge
