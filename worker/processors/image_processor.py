@@ -343,14 +343,14 @@ Describe the illustration in detail, including:
             if response.text:
                 logger.info("Creating enhanced visual from Gemini description")
                 # Create a rich placeholder based on the description
-                return create_rich_placeholder(prompt, response.text, age_group)
+                return create_rich_placeholder(page_prompt, response.text, age_group)
             else:
                 raise ValueError("No scene description generated")
             
         except Exception as desc_error:
             logger.warning(f"Scene description failed: {str(desc_error)}, using basic placeholder")
             # Fall back to basic enhanced placeholder
-            return create_enhanced_placeholder(prompt, age_group)
+            return create_enhanced_placeholder(page_prompt, age_group)
             
     except Exception as e:
         logger.error(f"Gemini integration error: {str(e)}")
