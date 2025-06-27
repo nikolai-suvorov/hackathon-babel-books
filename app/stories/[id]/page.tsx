@@ -54,6 +54,7 @@ interface Story {
     title: string;
     metadata: any;
     pages: StoryPage[];
+    totalPages?: number;
   };
   createdAt: string;
   updatedAt: string;
@@ -180,11 +181,16 @@ export default function StoryPage() {
       story.status === 'generating_text' || story.status === 'generating_images' ||
       story.status === 'generating_audio' || story.status === 'generating_assets') {
     
-    // Check if we have at least one page ready
+    // Check if we have at least one page ready and if story generation is complete
     const hasPages = story.story?.pages && story.story.pages.length > 0;
+    const totalPages = story.story?.totalPages || story.story?.metadata?.pageCount || 0;
+    const allPagesReady = hasPages && (story.story?.pages?.length || 0) >= totalPages;
     
-    // If no pages are ready yet, show the interstitial
-    if (!hasPages) {
+    // If story is complete but status hasn't updated, don't show interstitial
+    if (allPagesReady && totalPages > 0) {
+      // Let the story display
+    } else if (!hasPages) {
+      // If no pages are ready yet, show the interstitial
       return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-soft-white to-blue-50">
           <div className="bg-white rounded-3xl shadow-xl p-8 max-w-md w-full mx-4">

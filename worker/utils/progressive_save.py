@@ -46,66 +46,22 @@ async def save_page_progressively(
     try:
         page_doc = {**page_data}
         
-        # Upload image to S3 if present
+        # Store image as base64 (S3 disabled for now)
         if image_data and image_data.get("imageData"):
-            # Generate S3 key
-            image_key = generate_asset_key(
-                story_id=str(story_id),
-                page_number=page_data["pageNumber"],
-                asset_type="image",
-                format=image_data.get("format", "png")
-            )
-            
-            # Upload to S3
-            image_url = await upload_asset(
-                base64_data=image_data["imageData"],
-                key=image_key,
-                content_type=f"image/{image_data.get('format', 'png')}",
-                metadata={
-                    "story_id": str(story_id),
-                    "page_number": str(page_data["pageNumber"])
-                    # Removed prompt from metadata due to S3 ASCII limitation
-                }
-            )
-            
-            # Add S3 URL to page data
             page_doc["image"] = {
-                "url": image_url,
-                "key": image_key,
+                "imageData": image_data["imageData"],
                 "format": image_data.get("format", "png")
             }
-            logger.info(f"Uploaded image for story {story_id} page {page_data['pageNumber']}")
+            logger.info(f"Stored image for story {story_id} page {page_data['pageNumber']}")
         
-        # Upload audio to S3 if present
+        # Store audio as base64 (S3 disabled for now)
         if audio_data and audio_data.get("audioData"):
-            # Generate S3 key
-            audio_key = generate_asset_key(
-                story_id=str(story_id),
-                page_number=page_data["pageNumber"],
-                asset_type="audio",
-                format=audio_data.get("format", "mp3")
-            )
-            
-            # Upload to S3
-            audio_url = await upload_asset(
-                base64_data=audio_data["audioData"],
-                key=audio_key,
-                content_type=f"audio/{audio_data.get('format', 'mp3')}",
-                metadata={
-                    "story_id": str(story_id),
-                    "page_number": str(page_data["pageNumber"]),
-                    "duration": str(audio_data.get("duration", 0))
-                }
-            )
-            
-            # Add S3 URL to page data
             page_doc["audio"] = {
-                "url": audio_url,
-                "key": audio_key,
+                "audioData": audio_data["audioData"],
                 "format": audio_data.get("format", "mp3"),
                 "duration": audio_data.get("duration", 0)
             }
-            logger.info(f"Uploaded audio for story {story_id} page {page_data['pageNumber']}")
+            logger.info(f"Stored audio for story {story_id} page {page_data['pageNumber']}")
         
         # Add page to story document
         await db.stories.update_one(
