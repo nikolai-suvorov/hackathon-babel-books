@@ -1,8 +1,8 @@
 // Test MongoDB connection with provided credentials
 const { MongoClient } = require('mongodb');
 
-// MongoDB URI - trying with 'server' username as shown in mongosh command
-const uri = 'mongodb+srv://server:flkitXVePO4knaiC@cluster0.wbygnpt.mongodb.net/babel-books?retryWrites=true&w=majority';
+// MongoDB URI - replace with your actual credentials
+const uri = process.env.MONGODB_URI || 'mongodb+srv://USERNAME:PASSWORD@cluster0.wbygnpt.mongodb.net/babel-books?retryWrites=true&w=majority';
 
 async function testConnection() {
   const client = new MongoClient(uri);

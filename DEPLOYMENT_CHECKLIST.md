@@ -36,10 +36,10 @@ git push origin main
 #### Both Services Need:
 ```
 NODE_ENV=production
-MONGODB_URI=mongodb+srv://[username]:[password]@cluster0.wbygnpt.mongodb.net/babel-books?retryWrites=true&w=majority
-GEMINI_API_KEY=AIzaSyDIh57faYlMHNcEwbb7rpCIXpCAjXhGjH8
-AWS_ACCESS_KEY_ID=AKIAY3GLMYDF6IFHOOFO
-AWS_SECRET_ACCESS_KEY=E1SAIDXgidsg+drTJ8XBoMe0+vkHA3AbzLWVq3mb
+MONGODB_URI=[Your MongoDB connection string]
+GEMINI_API_KEY=[Your Gemini API key]
+AWS_ACCESS_KEY_ID=[Your AWS access key]
+AWS_SECRET_ACCESS_KEY=[Your AWS secret key]
 AWS_REGION=us-east-2
 S3_BUCKET_NAME=babel-books-assets
 ```

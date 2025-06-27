@@ -35,8 +35,8 @@ Follow the steps in DEPLOYMENT.md:
 
 The MongoDB credentials need verification:
 - Cluster: cluster0.wbygnpt.mongodb.net
-- Username: Try 'server' or 'nsuvorovv22'
-- Password: flkitXVePO4knaiC
+- Username: [Provided separately]
+- Password: [Provided separately]
 
 ### 4. Configure Services
 
