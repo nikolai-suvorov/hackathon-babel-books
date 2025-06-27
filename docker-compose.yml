@@ -57,6 +57,7 @@ services:
       - AWS_ENDPOINT_URL=http://localstack:4566
       - S3_BUCKET_NAME=babel-books-assets
       - PYTHONUNBUFFERED=1
+      - USE_MOCK_STORIES=${USE_MOCK_STORIES:-false}
     depends_on:
       - mongodb
       - localstack

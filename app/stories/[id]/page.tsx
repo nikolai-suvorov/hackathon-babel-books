@@ -12,18 +12,22 @@ interface StoryPage {
 }
 
 interface Story {
-  id: string;
+  _id: string;
   prompt: string;
-  ageGroup: string;
-  tone: string;
-  language: string;
+  childName?: string;
+  childAge: string;
+  childInterests?: string;
+  textLanguage: string;
   narrationLanguage: string;
+  tone: string;
   status: string;
   story?: {
     title: string;
     metadata: any;
     pages: StoryPage[];
   };
+  createdAt: string;
+  updatedAt: string;
 }
 
 export default function StoryPage() {
@@ -34,15 +38,68 @@ export default function StoryPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // For now, load from sessionStorage (mock implementation)
-    const storyData = sessionStorage.getItem('storyData');
-    if (storyData) {
-      setStory(JSON.parse(storyData));
-      setIsLoading(false);
-    } else {
-      // In a real app, fetch from API
-      setIsLoading(false);
-    }
+    const fetchStory = async () => {
+      try {
+        const response = await fetch(`/api/stories?id=${params.id}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch story');
+        }
+        const data = await response.json();
+        setStory(data);
+        
+        // If story is still pending, poll for updates
+        if (data.status === 'pending' || data.status === 'processing') {
+          const pollInterval = setInterval(async () => {
+            const pollResponse = await fetch(`/api/stories?id=${params.id}`);
+            if (pollResponse.ok) {
+              const pollData = await pollResponse.json();
+              setStory(pollData);
+              if (pollData.status === 'completed' || pollData.status === 'failed') {
+                clearInterval(pollInterval);
+              }
+            }
+          }, 2000); // Poll every 2 seconds
+          
+          return () => clearInterval(pollInterval);
+        }
+      } catch (error) {
+        console.error('Error fetching story:', error);
+        // For demo, create a mock story
+        setStory({
+          _id: params.id as string,
+          prompt: 'Demo story',
+          childAge: '3-4 years',
+          textLanguage: 'English',
+          narrationLanguage: 'English',
+          tone: 'playful',
+          status: 'completed',
+          story: {
+            title: 'Demo Story',
+            metadata: {},
+            pages: [
+              {
+                pageNumber: 1,
+                text: 'This is a demo story. The real story is being generated...',
+                imagePrompt: 'A colorful illustration',
+                interactiveElement: 'Tap to continue',
+              },
+              {
+                pageNumber: 2,
+                text: 'The end of our demo story!',
+                imagePrompt: 'A happy ending',
+                interactiveElement: 'Tap to celebrate!',
+              },
+            ],
+          },
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchStory();
   }, [params.id]);
 
   // Add keyboard navigation
@@ -70,11 +127,85 @@ export default function StoryPage() {
     );
   }
 
-  if (!story || !story.story) {
+  if (!story) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-soft-white to-blue-50">
         <div className="text-center">
           <p className="text-xl font-semibold text-gray-600 mb-4">Story not found</p>
+          <Link
+            href="/create"
+            className="inline-block bg-dream-blue text-white px-6 py-3 rounded-full hover:bg-opacity-90"
+          >
+            Create a New Story
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // Handle different story statuses
+  if (story.status === 'pending' || story.status === 'processing') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-soft-white to-blue-50">
+        <div className="bg-white rounded-3xl shadow-xl p-8 max-w-md w-full mx-4">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-dream-blue mx-auto mb-4"></div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Creating Your Story</h2>
+            <p className="text-gray-600 mb-4">
+              {story.status === 'pending' ? 'Your story is in the queue...' : 'Writing magical words...'}
+            </p>
+            <div className="bg-gray-100 rounded-lg p-4 mb-4">
+              <p className="text-sm text-gray-700">
+                <strong>Prompt:</strong> {story.prompt}
+              </p>
+              {story.childName && (
+                <p className="text-sm text-gray-700 mt-1">
+                  <strong>For:</strong> {story.childName}
+                </p>
+              )}
+            </div>
+            <p className="text-xs text-gray-500">This usually takes 10-30 seconds</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (story.status === 'failed') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-soft-white to-blue-50">
+        <div className="bg-white rounded-3xl shadow-xl p-8 max-w-md w-full mx-4">
+          <div className="text-center">
+            <div className="text-6xl mb-4">😔</div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Oops! Something went wrong</h2>
+            <p className="text-gray-600 mb-6">
+              We couldn't create your story. This might be due to high demand or a temporary issue.
+            </p>
+            <div className="space-y-3">
+              <Link
+                href="/create"
+                className="block w-full bg-dream-blue text-white px-6 py-3 rounded-full hover:bg-opacity-90"
+              >
+                Try Again
+              </Link>
+              <button
+                onClick={() => router.back()}
+                className="block w-full bg-gray-200 text-gray-800 px-6 py-3 rounded-full hover:bg-gray-300"
+              >
+                Go Back
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!story.story) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-soft-white to-blue-50">
+        <div className="text-center">
+          <p className="text-xl font-semibold text-gray-600 mb-4">Story content not available</p>
           <Link
             href="/create"
             className="inline-block bg-dream-blue text-white px-6 py-3 rounded-full hover:bg-opacity-90"

@@ -6,8 +6,9 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# Configure Gemini
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+# Configure Gemini only if not using mock
+if os.getenv("USE_MOCK_STORIES") != "true":
+    genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 # Age-specific story parameters
 AGE_CONFIGS = {
@@ -47,6 +48,10 @@ async def generate(prompt: str, age_group: str, tone: str, language: str) -> Dic
     """Generate a story based on the given parameters"""
     
     config = AGE_CONFIGS.get(age_group, AGE_CONFIGS["3-4 years"])
+    
+    # Check if we're using a mock API key or if Gemini is unavailable
+    if os.getenv("GEMINI_API_KEY") == "mock-api-key" or os.getenv("USE_MOCK_STORIES") == "true":
+        return await generate_mock_story(prompt, age_group, tone, language, config)
     
     # Build the system prompt
     system_prompt = f"""You are a creative children's book author specializing in stories for {age_group} year olds.
@@ -108,3 +113,90 @@ Format your response as JSON:
     except Exception as e:
         logger.error(f"Error generating story: {str(e)}")
         raise
+
+async def generate_mock_story(prompt: str, age_group: str, tone: str, language: str, config: Dict) -> Dict:
+    """Generate a mock story for testing"""
+    logger.info("Generating mock story for testing")
+    
+    # Create age-appropriate mock content
+    if "0-6 months" in age_group:
+        pages = [
+            {
+                "pageNumber": 1,
+                "text": "Look! A happy sun!",
+                "imagePrompt": "bright yellow sun with a smiling face on white background",
+                "interactiveElement": "Tap the sun!"
+            },
+            {
+                "pageNumber": 2,
+                "text": "The sun is yellow!",
+                "imagePrompt": "large yellow circle on white background",
+                "interactiveElement": "Say 'yellow'!"
+            },
+            {
+                "pageNumber": 3,
+                "text": "Bye bye, sun!",
+                "imagePrompt": "sun waving goodbye",
+                "interactiveElement": "Wave bye-bye!"
+            }
+        ]
+    elif "6-18 months" in age_group:
+        pages = [
+            {
+                "pageNumber": 1,
+                "text": f"Once there was a {prompt.lower()}",
+                "imagePrompt": f"colorful illustration of {prompt}",
+                "interactiveElement": "Point to the picture!"
+            },
+            {
+                "pageNumber": 2,
+                "text": "They loved to play and laugh!",
+                "imagePrompt": "happy characters playing",
+                "interactiveElement": "Clap your hands!"
+            },
+            {
+                "pageNumber": 3,
+                "text": "Time for a nap. Good night!",
+                "imagePrompt": "peaceful sleeping scene",
+                "interactiveElement": "Shhh... sleeping"
+            }
+        ]
+    else:
+        # For older children
+        pages = [
+            {
+                "pageNumber": 1,
+                "text": f"In a {tone} land far away, {prompt}. This was the beginning of an amazing adventure!",
+                "imagePrompt": f"A {tone} scene showing {prompt} in a fantastical setting",
+                "interactiveElement": "What do you see in the picture?"
+            },
+            {
+                "pageNumber": 2,
+                "text": "Every day brought new discoveries and wonderful surprises. The world was full of magic!",
+                "imagePrompt": f"A magical scene with {tone} elements and bright colors",
+                "interactiveElement": "Count the magical objects!"
+            },
+            {
+                "pageNumber": 3,
+                "text": "Friends gathered from near and far to join the adventure. Together, they were unstoppable!",
+                "imagePrompt": "A group of diverse friendly characters on an adventure",
+                "interactiveElement": "Which friend is your favorite?"
+            },
+            {
+                "pageNumber": 4,
+                "text": "And so the adventure continued, with more stories to tell another day. The end!",
+                "imagePrompt": f"A beautiful sunset scene with {tone} atmosphere",
+                "interactiveElement": "Tell your own ending!"
+            }
+        ]
+    
+    return {
+        "title": f"The {tone.title()} Adventures of {prompt.title()}",
+        "pages": pages[:config["pages"]],  # Limit to configured page count
+        "metadata": {
+            "ageGroup": age_group,
+            "tone": tone,
+            "language": language,
+            "pageCount": len(pages)
+        }
+    }

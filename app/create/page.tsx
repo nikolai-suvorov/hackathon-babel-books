@@ -34,9 +34,11 @@ export default function CreateStoryPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     prompt: '',
-    ageGroup: '',
-    tone: '',
-    language: 'English',
+    childName: '',
+    childAge: '',
+    childInterests: '',
+    tone: 'playful',
+    textLanguage: 'English',
     narrationLanguage: 'English',
   });
 
@@ -45,47 +47,31 @@ export default function CreateStoryPage() {
     setIsLoading(true);
 
     try {
-      // For now, create a mock story
-      const mockStoryId = 'mock-' + Date.now();
-      
-      // Store form data in sessionStorage for the story page
-      sessionStorage.setItem('storyData', JSON.stringify({
-        id: mockStoryId,
-        ...formData,
-        status: 'completed',
-        story: {
-          title: "The Adventures of " + formData.prompt,
-          metadata: {
-            ageGroup: formData.ageGroup,
-            tone: formData.tone,
-            language: formData.language,
-          },
-          pages: [
-            {
-              pageNumber: 1,
-              text: `Once upon a time, ${formData.prompt}. This is a ${formData.tone} story for ${formData.ageGroup} in ${formData.language}.`,
-              imagePrompt: "A colorful illustration of the beginning of the story",
-              interactiveElement: "Tap the character to say hello!",
-            },
-            {
-              pageNumber: 2,
-              text: "And they lived happily ever after. The end!",
-              imagePrompt: "A happy ending scene",
-              interactiveElement: "Tap anywhere to celebrate!",
-            },
-          ],
+      // Call the API to create a story
+      const response = await fetch('/api/stories', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-      }));
+        body: JSON.stringify(formData),
+      });
 
+      if (!response.ok) {
+        throw new Error('Failed to create story');
+      }
+
+      const data = await response.json();
+      
       // Navigate to story page
-      router.push(`/stories/${mockStoryId}`);
+      router.push(`/stories/${data.storyId}`);
     } catch (error) {
       console.error('Error creating story:', error);
+      alert('Failed to create story. Please try again.');
       setIsLoading(false);
     }
   };
 
-  const isFormValid = formData.prompt.length >= 5 && formData.ageGroup && formData.tone;
+  const isFormValid = formData.prompt.length >= 5 && formData.childAge && formData.tone;
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-soft-white to-blue-50 py-8">
@@ -115,15 +101,48 @@ export default function CreateStoryPage() {
             </p>
           </div>
 
+          {/* Child Name */}
+          <div>
+            <label htmlFor="childName" className="block text-lg font-semibold mb-2">
+              Child's Name (optional)
+            </label>
+            <input
+              id="childName"
+              type="text"
+              value={formData.childName}
+              onChange={(e) => setFormData({ ...formData, childName: e.target.value })}
+              placeholder="Emma"
+              className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-dream-blue focus:outline-none"
+            />
+          </div>
+
+          {/* Child Interests */}
+          <div>
+            <label htmlFor="childInterests" className="block text-lg font-semibold mb-2">
+              Child's Interests (optional)
+            </label>
+            <input
+              id="childInterests"
+              type="text"
+              value={formData.childInterests}
+              onChange={(e) => setFormData({ ...formData, childInterests: e.target.value })}
+              placeholder="dinosaurs, space, cooking"
+              className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-dream-blue focus:outline-none"
+            />
+            <p className="text-sm text-gray-600 mt-1">
+              Help us personalize the story with your child's favorite things
+            </p>
+          </div>
+
           {/* Age Group */}
           <div>
             <label htmlFor="ageGroup" className="block text-lg font-semibold mb-2">
               Child's Age
             </label>
             <select
-              id="ageGroup"
-              value={formData.ageGroup}
-              onChange={(e) => setFormData({ ...formData, ageGroup: e.target.value })}
+              id="childAge"
+              value={formData.childAge}
+              onChange={(e) => setFormData({ ...formData, childAge: e.target.value })}
               className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-dream-blue focus:outline-none"
               required
             >
@@ -176,9 +195,9 @@ export default function CreateStoryPage() {
                 Story Language
               </label>
               <select
-                id="language"
-                value={formData.language}
-                onChange={(e) => setFormData({ ...formData, language: e.target.value })}
+                id="textLanguage"
+                value={formData.textLanguage}
+                onChange={(e) => setFormData({ ...formData, textLanguage: e.target.value })}
                 className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-dream-blue focus:outline-none"
               >
                 {LANGUAGES.map((lang) => (

@@ -55,34 +55,37 @@ async def process_jobs():
                 logger.info(f"Processing job {job['_id']} for story {job['storyId']}")
                 
                 try:
+                    # Get story data from job
+                    story_data_from_job = job.get("data", {})
+                    
                     # 1. Content safety check on prompt
-                    is_safe = await content_filter.check_prompt_safety(job["prompt"])
+                    is_safe = await content_filter.check_prompt_safety(story_data_from_job.get("prompt", ""))
                     if not is_safe:
                         raise ValueError("Prompt contains inappropriate content")
                     
                     # 2. Generate story text
                     await update_story_status(db, job["storyId"], "generating_text")
                     story_data = await story_generator.generate(
-                        prompt=job["prompt"],
-                        age_group=job["ageGroup"],
-                        tone=job["tone"],
-                        language=job["language"]
+                        prompt=story_data_from_job.get("prompt", ""),
+                        age_group=story_data_from_job.get("childAge", "3-4 years"),
+                        tone=story_data_from_job.get("tone", "playful"),
+                        language=story_data_from_job.get("textLanguage", "English")
                     )
                     
                     # 3. Generate images for each page
                     await update_story_status(db, job["storyId"], "generating_images")
                     images = await image_processor.generate_story_images(
                         story_data["pages"],
-                        age_group=job["ageGroup"]
+                        age_group=story_data_from_job.get("childAge", "3-4 years")
                     )
                     
                     # 4. Generate narration with background music
                     await update_story_status(db, job["storyId"], "generating_audio")
                     audio_files = await audio_processor.generate_narration(
                         story_data["pages"],
-                        language=job.get("narrationLanguage", job["language"]),
-                        tone=job["tone"],
-                        age_group=job["ageGroup"]
+                        language=story_data_from_job.get("narrationLanguage", story_data_from_job.get("textLanguage", "English")),
+                        tone=story_data_from_job.get("tone", "playful"),
+                        age_group=story_data_from_job.get("childAge", "3-4 years")
                     )
                     
                     # 5. Upload all assets and save story
