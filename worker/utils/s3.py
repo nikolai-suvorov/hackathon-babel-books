@@ -22,8 +22,14 @@ def get_s3_client():
     # Add endpoint URL for LocalStack
     if AWS_ENDPOINT_URL:
         config["endpoint_url"] = AWS_ENDPOINT_URL
-        config["aws_access_key_id"] = os.getenv("AWS_ACCESS_KEY_ID", "test")
-        config["aws_secret_access_key"] = os.getenv("AWS_SECRET_ACCESS_KEY", "test")
+    
+    # Add AWS credentials if provided (for both local and production)
+    aws_access_key = os.getenv("AWS_ACCESS_KEY_ID")
+    aws_secret_key = os.getenv("AWS_SECRET_ACCESS_KEY")
+    
+    if aws_access_key and aws_secret_key:
+        config["aws_access_key_id"] = aws_access_key
+        config["aws_secret_access_key"] = aws_secret_key
     
     return boto3.client("s3", **config)
 
