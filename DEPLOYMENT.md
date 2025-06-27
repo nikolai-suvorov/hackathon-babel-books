@@ -37,9 +37,9 @@ git push -u origin main
    NEXTAUTH_URL=https://babel-books-web.onrender.com
    NEXTAUTH_SECRET=[generate a secure secret]
    MONGODB_URI=mongodb+srv://YOUR_USERNAME:YOUR_PASSWORD@cluster0.wbygnpt.mongodb.net/babel-books?retryWrites=true&w=majority
-   GEMINI_API_KEY=
-   AWS_ACCESS_KEY_ID=
-   AWS_SECRET_ACCESS_KEY=
+   GEMINI_API_KEY=AIzaSyDIh57faYlMHNcEwbb7rpCIXpCAjXhGjH8
+   AWS_ACCESS_KEY_ID=AKIAY3GLMYDF6IFHOOFO
+   AWS_SECRET_ACCESS_KEY=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
    AWS_REGION=us-east-2
    S3_BUCKET_NAME=babel-books-assets
    NEXT_PUBLIC_PRODUCT_NAME=BabelBooks
