@@ -3,6 +3,7 @@ services:
   - type: web
     name: babel-books-web
     runtime: node
+    plan: free
     buildCommand: npm install && npm run build
     startCommand: npm start
     envVars:
@@ -16,6 +17,7 @@ services:
   - type: worker
     name: babel-books-worker
     runtime: python
+    plan: free
     buildCommand: cd worker && pip install -r requirements.txt
     startCommand: cd worker && python main.py
     envVars:
