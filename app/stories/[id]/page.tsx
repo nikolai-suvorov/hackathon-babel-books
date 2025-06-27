@@ -293,9 +293,9 @@ export default function StoryPage() {
             </p>
 
             {/* Language Info */}
-            {story.language !== story.narrationLanguage && (
+            {story.textLanguage !== story.narrationLanguage && (
               <div className="mt-4 flex items-center gap-2 text-sm text-gray-600">
-                <span>📖 Text: {story.language}</span>
+                <span>📖 Text: {story.textLanguage}</span>
                 <span>•</span>
                 <span>🔊 Narration: {story.narrationLanguage}</span>
               </div>
