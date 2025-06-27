@@ -8,17 +8,17 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      - key: NEXT_PUBLIC_APP_URL
-        value: https://babel-books.onrender.com
       - key: NEXT_PUBLIC_PRODUCT_NAME
         value: BabelBooks
+      # Other env vars should be added via Render dashboard for security
 
   # Background Worker (Python)
   - type: worker
     name: babel-books-worker
     runtime: python
     buildCommand: cd worker && pip install -r requirements.txt
-    startCommand: cd worker && uvicorn main:app --host 0.0.0.0 --port 8000
+    startCommand: cd worker && python main.py
     envVars:
       - key: PYTHONUNBUFFERED
         value: 1
+      # Other env vars should be added via Render dashboard for security
