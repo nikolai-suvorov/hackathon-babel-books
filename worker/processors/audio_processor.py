@@ -1,13 +1,29 @@
 import os
 from typing import List, Dict
 import logging
-from gtts import gTTS
 import io
 import base64
-from pydub import AudioSegment
-from pydub.generators import Sine
+import json
+import google.generativeai as genai
 
 logger = logging.getLogger(__name__)
+
+# Check if we should use mock audio
+USE_MOCK_AUDIO = os.getenv("USE_MOCK_STORIES") == "true" or os.getenv("USE_MOCK_AUDIO") == "true"
+
+# Import audio libraries only if not using mock
+if not USE_MOCK_AUDIO:
+    try:
+        from gtts import gTTS
+        from pydub import AudioSegment
+        from pydub.generators import Sine
+        AUDIO_LIBS_AVAILABLE = True
+    except ImportError:
+        logger.warning("Audio libraries not available, using mock audio")
+        AUDIO_LIBS_AVAILABLE = False
+        USE_MOCK_AUDIO = True
+else:
+    AUDIO_LIBS_AVAILABLE = False
 
 # Background music styles by tone
 MUSIC_STYLES = {
@@ -39,32 +55,73 @@ async def generate_narration(
     
     for page in pages:
         try:
-            # Generate TTS narration
-            narration = await generate_tts(
-                page["text"],
-                language,
-                voice_config
-            )
-            
-            # Generate background music
-            music = generate_background_music(
-                duration=len(page["text"]) * 0.1,  # Rough estimate
-                tone=tone
-            )
-            
-            # Mix narration with background music
-            final_audio = mix_audio(narration, music)
-            
-            # Add sound effects if there are interactive elements
-            if page.get("interactiveElement"):
-                final_audio = add_sound_effects(final_audio, page["interactiveElement"])
-            
-            audio_files.append({
-                "pageNumber": page["pageNumber"],
-                "audioData": audio_to_base64(final_audio),
-                "duration": len(final_audio) / 1000.0,  # Convert to seconds
-                "format": "mp3"
-            })
+            if USE_MOCK_AUDIO:
+                # Create mock audio data
+                audio_data = create_mock_audio(
+                    page["pageNumber"],
+                    page["text"],
+                    language,
+                    tone
+                )
+                audio_files.append({
+                    "pageNumber": page["pageNumber"],
+                    "audioData": audio_data,
+                    "duration": estimate_duration(page["text"]),
+                    "format": "mp3"
+                })
+            else:
+                # Try Gemini TTS first
+                try:
+                    # Configure Gemini if not already done
+                    if not USE_MOCK_AUDIO:
+                        genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+                    
+                    # Try Gemini TTS
+                    from .audio_processor_gemini import generate_with_gemini_tts
+                    gemini_audio = await generate_with_gemini_tts(
+                        page["text"],
+                        language,
+                        age_group
+                    )
+                    
+                    if gemini_audio:
+                        logger.info(f"Generated audio with Gemini TTS for page {page['pageNumber']}")
+                        audio_files.append({
+                            "pageNumber": page["pageNumber"],
+                            "audioData": gemini_audio,
+                            "duration": estimate_duration(page["text"]),
+                            "format": "mp3"
+                        })
+                        continue
+                except Exception as e:
+                    logger.warning(f"Gemini TTS failed: {e}, falling back to gTTS")
+                
+                # Fall back to gTTS
+                narration = await generate_tts(
+                    page["text"],
+                    language,
+                    voice_config
+                )
+                
+                # Generate background music
+                music = generate_background_music(
+                    duration=len(page["text"]) * 0.1,  # Rough estimate
+                    tone=tone
+                )
+                
+                # Mix narration with background music
+                final_audio = mix_audio(narration, music)
+                
+                # Add sound effects if there are interactive elements
+                if page.get("interactiveElement"):
+                    final_audio = add_sound_effects(final_audio, page["interactiveElement"])
+                
+                audio_files.append({
+                    "pageNumber": page["pageNumber"],
+                    "audioData": audio_to_base64(final_audio),
+                    "duration": len(final_audio) / 1000.0,  # Convert to seconds
+                    "format": "mp3"
+                })
             
             logger.info(f"Generated audio for page {page['pageNumber']}")
             
@@ -74,7 +131,7 @@ async def generate_narration(
     
     return audio_files
 
-async def generate_tts(text: str, language: str, voice_config: Dict) -> AudioSegment:
+async def generate_tts(text: str, language: str, voice_config: Dict):
     """Generate text-to-speech audio"""
     try:
         # Map language codes to gTTS language codes
@@ -114,7 +171,7 @@ async def generate_tts(text: str, language: str, voice_config: Dict) -> AudioSeg
         # Return a simple beep as fallback
         return Sine(440).to_audio_segment(duration=1000)
 
-def generate_background_music(duration: float, tone: str) -> AudioSegment:
+def generate_background_music(duration: float, tone: str):
     """Generate simple background music based on tone"""
     music_config = MUSIC_STYLES.get(tone, MUSIC_STYLES["wholesome"])
     
@@ -128,7 +185,7 @@ def generate_background_music(duration: float, tone: str) -> AudioSegment:
     
     return music
 
-def mix_audio(narration: AudioSegment, music: AudioSegment) -> AudioSegment:
+def mix_audio(narration, music):
     """Mix narration with background music"""
     # Ensure music is at least as long as narration
     if len(music) < len(narration):
@@ -142,7 +199,7 @@ def mix_audio(narration: AudioSegment, music: AudioSegment) -> AudioSegment:
     
     return mixed
 
-def add_sound_effects(audio: AudioSegment, interactive_element: str) -> AudioSegment:
+def add_sound_effects(audio, interactive_element: str):
     """Add sound effects for interactive elements"""
     # Simple sound effect at the end
     # In production, this would add contextual sounds
@@ -151,9 +208,33 @@ def add_sound_effects(audio: AudioSegment, interactive_element: str) -> AudioSeg
     
     return audio + beep
 
-def audio_to_base64(audio: AudioSegment) -> str:
+def audio_to_base64(audio) -> str:
     """Convert AudioSegment to base64 string"""
     buffer = io.BytesIO()
     audio.export(buffer, format="mp3")
     buffer.seek(0)
     return base64.b64encode(buffer.read()).decode()
+
+def create_mock_audio(page_number: int, text: str, language: str, tone: str) -> str:
+    """Create mock audio data for testing"""
+    mock_data = {
+        "type": "mock_audio",
+        "page": page_number,
+        "text_preview": text[:100] + "..." if len(text) > 100 else text,
+        "language": language,
+        "tone": tone,
+        "duration": estimate_duration(text),
+        "note": "This is mock audio data. Real audio would be generated with TTS."
+    }
+    
+    # Convert to base64 to simulate audio data
+    json_str = json.dumps(mock_data, indent=2)
+    return base64.b64encode(json_str.encode()).decode()
+
+def estimate_duration(text: str) -> float:
+    """Estimate audio duration based on text length"""
+    # Average speaking rate: 150 words per minute
+    # Average word length: 5 characters
+    words = len(text) / 5
+    minutes = words / 150
+    return round(minutes * 60, 1)  # Return seconds

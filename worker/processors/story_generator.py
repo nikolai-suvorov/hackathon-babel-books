@@ -82,7 +82,15 @@ Format your response as JSON:
 
     try:
         # Generate with Gemini
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel(
+            'gemini-1.5-flash-latest',
+            safety_settings={
+                'HARM_CATEGORY_HATE_SPEECH': 'BLOCK_NONE',
+                'HARM_CATEGORY_SEXUALLY_EXPLICIT': 'BLOCK_NONE',
+                'HARM_CATEGORY_DANGEROUS_CONTENT': 'BLOCK_NONE',
+                'HARM_CATEGORY_HARASSMENT': 'BLOCK_NONE'
+            }
+        )
         response = await model.generate_content_async(
             system_prompt,
             generation_config=genai.types.GenerationConfig(

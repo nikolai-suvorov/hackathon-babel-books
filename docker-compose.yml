@@ -49,22 +49,16 @@ services:
     volumes:
       - ./worker:/app
       - /app/__pycache__
+    env_file:
+      - ./worker/.env
     environment:
-      - MONGODB_URI=mongodb://admin:password@mongodb:27017/babel-books?authSource=admin
-      - GEMINI_API_KEY=${GEMINI_API_KEY:-mock-key}
-      - AWS_ACCESS_KEY_ID=test
-      - AWS_SECRET_ACCESS_KEY=test
-      - AWS_ENDPOINT_URL=http://localstack:4566
-      - S3_BUCKET_NAME=babel-books-assets
       - PYTHONUNBUFFERED=1
-      - USE_MOCK_STORIES=${USE_MOCK_STORIES:-false}
-    depends_on:
-      - mongodb
-      - localstack
     networks:
       - babel-books-network
     ports:
       - "8000:8000"
+    depends_on:
+      - mongodb
 
 volumes:
   mongo-data:

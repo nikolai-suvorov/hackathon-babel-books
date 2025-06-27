@@ -9,6 +9,11 @@ interface StoryPage {
   text: string;
   imagePrompt: string;
   interactiveElement?: string;
+  audio?: {
+    audioData: string;
+    duration: number;
+    format: string;
+  };
 }
 
 interface Story {
@@ -234,6 +239,27 @@ export default function StoryPage() {
     }
   };
 
+  const playAudio = (audioData: string | undefined) => {
+    if (!audioData) return;
+    
+    try {
+      // For mock audio, just log it
+      const mockData = JSON.parse(atob(audioData));
+      if (mockData.type === 'mock_audio') {
+        console.log('Mock audio would play:', mockData);
+        alert(`🔊 Playing narration for page ${mockData.page} (${mockData.duration}s)`);
+        return;
+      }
+    } catch {
+      // Real audio data - create audio element and play
+      const audio = new Audio(`data:audio/mp3;base64,${audioData}`);
+      audio.play().catch(err => {
+        console.error('Error playing audio:', err);
+        alert('Unable to play audio at this time');
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-soft-white to-blue-50">
       {/* Header */}
@@ -267,14 +293,22 @@ export default function StoryPage() {
 
         {/* Story Page */}
         <div className="bg-white rounded-3xl shadow-xl overflow-hidden">
-          {/* Image Placeholder */}
-          <div className="aspect-video bg-gradient-to-br from-sunshine-yellow to-coral-pink relative">
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center text-white">
-                <p className="text-6xl mb-4">🖼️</p>
-                <p className="text-lg font-medium px-4">{currentPageData.imagePrompt}</p>
+          {/* Story Image */}
+          <div className="aspect-video bg-gradient-to-br from-sunshine-yellow to-coral-pink relative overflow-hidden">
+            {currentPageData.image?.imageData ? (
+              <img 
+                src={`data:image/${currentPageData.image.format || 'png'};base64,${currentPageData.image.imageData}`}
+                alt={currentPageData.imagePrompt}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-center text-white">
+                  <p className="text-6xl mb-4">🖼️</p>
+                  <p className="text-lg font-medium px-4">{currentPageData.imagePrompt}</p>
+                </div>
               </div>
-            </div>
+            )}
             
             {/* Interactive Element Indicator */}
             {currentPageData.interactiveElement && (
@@ -291,6 +325,28 @@ export default function StoryPage() {
             <p className="text-xl leading-relaxed text-gray-800 font-body">
               {currentPageData.text}
             </p>
+
+            {/* Audio Controls */}
+            {currentPageData.audio?.audioData && (
+              <div className="mt-6 bg-gray-50 rounded-xl p-4">
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => playAudio(currentPageData.audio?.audioData)}
+                    className="bg-dream-blue text-white p-3 rounded-full hover:bg-opacity-90 transition-all transform hover:scale-105"
+                    aria-label="Play narration"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </button>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-700">Listen to the story</p>
+                    <p className="text-xs text-gray-500">Duration: {currentPageData.audio.duration}s</p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Language Info */}
             {story.textLanguage !== story.narrationLanguage && (
