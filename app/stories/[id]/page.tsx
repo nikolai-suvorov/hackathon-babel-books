@@ -217,8 +217,7 @@ export default function StoryPage() {
                   </div>
                   <div className="flex items-center justify-center text-sm">
                     <span className={`mr-2 ${story.status === 'generating_audio' ? 'animate-spin' : ''}`}>
-                      {story.status === 'generating_audio' ? '⏳' : 
-                       story.status === 'completed' ? '✅' : '⏸️'}
+                      {story.status === 'generating_audio' ? '⏳' : '⏸️'}
                     </span>
                     <span className={story.status === 'generating_audio' ? 'text-dream-blue font-semibold' : 'text-gray-500'}>
                       Recording narration
