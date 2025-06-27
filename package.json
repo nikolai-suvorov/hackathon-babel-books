@@ -20,13 +20,13 @@
     "stripe": "^17.4.0",
     "tailwindcss": "^3.4.1",
     "postcss": "^8",
-    "autoprefixer": "^10"
-  },
-  "devDependencies": {
+    "autoprefixer": "^10",
+    "typescript": "^5",
     "@types/node": "^20",
     "@types/react": "^18",
-    "@types/react-dom": "^18",
-    "typescript": "^5",
+    "@types/react-dom": "^18"
+  },
+  "devDependencies": {
     "tsx": "^4.19.2"
   }
 }
