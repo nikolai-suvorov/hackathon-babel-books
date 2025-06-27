@@ -10,11 +10,15 @@ interface StoryPage {
   imagePrompt: string;
   interactiveElement?: string;
   image?: {
-    imageData: string;
+    imageData?: string; // For backward compatibility
+    url?: string; // S3 URL
+    key?: string; // S3 key
     format: string;
   };
   audio?: {
-    audioData: string;
+    audioData?: string; // For backward compatibility
+    url?: string; // S3 URL
+    key?: string; // S3 key
     duration: number;
     format: string;
   };
@@ -243,25 +247,38 @@ export default function StoryPage() {
     }
   };
 
-  const playAudio = (audioData: string | undefined) => {
+  const playAudio = (audioData?: { url?: string; audioData?: string }) => {
     if (!audioData) return;
     
-    try {
-      // For mock audio, just log it
-      const mockData = JSON.parse(atob(audioData));
-      if (mockData.type === 'mock_audio') {
-        console.log('Mock audio would play:', mockData);
-        alert(`🔊 Playing narration for page ${mockData.page} (${mockData.duration}s)`);
-        return;
+    let audioSource: string;
+    
+    if (audioData.url) {
+      // S3 URL
+      audioSource = audioData.url;
+    } else if (audioData.audioData) {
+      // Base64 data (backward compatibility)
+      try {
+        // Check if it's mock audio
+        const mockData = JSON.parse(atob(audioData.audioData));
+        if (mockData.type === 'mock_audio') {
+          console.log('Mock audio would play:', mockData);
+          alert(`🔊 Playing narration for page ${mockData.page} (${mockData.duration}s)`);
+          return;
+        }
+      } catch {
+        // Real base64 audio data
+        audioSource = `data:audio/mp3;base64,${audioData.audioData}`;
       }
-    } catch {
-      // Real audio data - create audio element and play
-      const audio = new Audio(`data:audio/mp3;base64,${audioData}`);
-      audio.play().catch(err => {
-        console.error('Error playing audio:', err);
-        alert('Unable to play audio at this time');
-      });
+    } else {
+      return;
     }
+    
+    // Play audio
+    const audio = new Audio(audioSource);
+    audio.play().catch(err => {
+      console.error('Error playing audio:', err);
+      alert('Unable to play audio at this time');
+    });
   };
 
   return (
@@ -299,9 +316,12 @@ export default function StoryPage() {
         <div className="bg-white rounded-3xl shadow-xl overflow-hidden">
           {/* Story Image */}
           <div className="aspect-video bg-gradient-to-br from-sunshine-yellow to-coral-pink relative overflow-hidden">
-            {currentPageData.image?.imageData ? (
+            {currentPageData.image && (currentPageData.image.url || currentPageData.image.imageData) ? (
               <img 
-                src={`data:image/${currentPageData.image.format || 'png'};base64,${currentPageData.image.imageData}`}
+                src={
+                  currentPageData.image.url || 
+                  `data:image/${currentPageData.image.format || 'png'};base64,${currentPageData.image.imageData}`
+                }
                 alt={currentPageData.imagePrompt}
                 className="w-full h-full object-cover"
               />
@@ -331,11 +351,11 @@ export default function StoryPage() {
             </p>
 
             {/* Audio Controls */}
-            {currentPageData.audio?.audioData && (
+            {currentPageData.audio && (currentPageData.audio.url || currentPageData.audio.audioData) && (
               <div className="mt-6 bg-gray-50 rounded-xl p-4">
                 <div className="flex items-center gap-4">
                   <button
-                    onClick={() => playAudio(currentPageData.audio?.audioData)}
+                    onClick={() => playAudio(currentPageData.audio)}
                     className="bg-dream-blue text-white p-3 rounded-full hover:bg-opacity-90 transition-all transform hover:scale-105"
                     aria-label="Play narration"
                   >
