@@ -232,6 +232,38 @@ export default function StoryPage() {
 
   const { pages } = story.story;
   const currentPageData = pages[currentPage];
+  
+  // Handle case where page is not yet generated (progressive loading)
+  if (!currentPageData) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-soft-white to-blue-50">
+        <div className="bg-white shadow-sm">
+          <div className="container mx-auto px-4 py-4">
+            <Link href="/" className="text-gray-600 hover:text-gray-800">
+              ← Back to Home
+            </Link>
+          </div>
+        </div>
+        <div className="container mx-auto px-4 py-8 max-w-4xl">
+          <h1 className="font-display text-3xl font-bold text-center text-dream-blue mb-8">
+            {story.story.title || 'Your Story'}
+          </h1>
+          <div className="bg-white rounded-3xl shadow-xl overflow-hidden p-8">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-dream-blue mx-auto mb-4"></div>
+              <p className="text-lg text-gray-600">
+                Generating page {currentPage + 1}...
+              </p>
+              <p className="text-sm text-gray-500 mt-2">
+                {pages.length > 0 ? `${pages.length} pages ready` : 'Starting generation...'}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
   const isFirstPage = currentPage === 0;
   const isLastPage = currentPage === pages.length - 1;
 
@@ -250,7 +282,7 @@ export default function StoryPage() {
   const playAudio = (audioData?: { url?: string; audioData?: string }) => {
     if (!audioData) return;
     
-    let audioSource: string;
+    let audioSource: string | undefined;
     
     if (audioData.url) {
       // S3 URL
@@ -269,7 +301,9 @@ export default function StoryPage() {
         // Real base64 audio data
         audioSource = `data:audio/mp3;base64,${audioData.audioData}`;
       }
-    } else {
+    }
+    
+    if (!audioSource) {
       return;
     }
     
