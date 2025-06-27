@@ -65,7 +65,19 @@ async def upload_asset(
         }
         
         if metadata:
-            put_params["Metadata"] = metadata
+            # Ensure all metadata values are ASCII-safe
+            safe_metadata = {}
+            for key, value in metadata.items():
+                try:
+                    # Convert to ASCII, replacing non-ASCII characters
+                    safe_value = str(value).encode('ascii', 'replace').decode('ascii')
+                    safe_metadata[key] = safe_value
+                except Exception:
+                    # Skip problematic metadata
+                    logger.warning(f"Skipping metadata key '{key}' due to encoding issues")
+            
+            if safe_metadata:
+                put_params["Metadata"] = safe_metadata
         
         s3_client.put_object(**put_params)
         

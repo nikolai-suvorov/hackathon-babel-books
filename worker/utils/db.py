@@ -71,8 +71,8 @@ async def upload_and_save_story(
                         content_type=f"image/{image_data.get('format', 'png')}",
                         metadata={
                             "story_id": str(story_id),
-                            "page_number": str(page["pageNumber"]),
-                            "prompt": image_data.get("prompt", "")
+                            "page_number": str(page["pageNumber"])
+                            # Removed prompt from metadata due to S3 ASCII limitation
                         }
                     )
                     
