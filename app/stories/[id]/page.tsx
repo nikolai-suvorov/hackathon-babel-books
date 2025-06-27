@@ -157,31 +157,85 @@ export default function StoryPage() {
   }
 
   // Handle different story statuses
-  if (story.status === 'pending' || story.status === 'processing') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-soft-white to-blue-50">
-        <div className="bg-white rounded-3xl shadow-xl p-8 max-w-md w-full mx-4">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-dream-blue mx-auto mb-4"></div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Creating Your Story</h2>
-            <p className="text-gray-600 mb-4">
-              {story.status === 'pending' ? 'Your story is in the queue...' : 'Writing magical words...'}
-            </p>
-            <div className="bg-gray-100 rounded-lg p-4 mb-4">
-              <p className="text-sm text-gray-700">
-                <strong>Prompt:</strong> {story.prompt}
+  if (story.status === 'pending' || story.status === 'processing' || 
+      story.status === 'generating_text' || story.status === 'generating_images' ||
+      story.status === 'generating_audio' || story.status === 'generating_assets') {
+    
+    // Check if we have at least one page ready
+    const hasPages = story.story?.pages && story.story.pages.length > 0;
+    
+    // If no pages are ready yet, show the interstitial
+    if (!hasPages) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-soft-white to-blue-50">
+          <div className="bg-white rounded-3xl shadow-xl p-8 max-w-md w-full mx-4">
+            <div className="text-center">
+              <div className="mb-6">
+                <div className="animate-bounce inline-block">
+                  <span className="text-6xl">📖</span>
+                </div>
+                <div className="animate-pulse inline-block ml-2">
+                  <span className="text-6xl">✨</span>
+                </div>
+              </div>
+              <h2 className="text-2xl font-bold text-gray-800 mb-3">
+                Your Story is Being Created
+              </h2>
+              <p className="text-lg text-gray-600 mb-4">
+                Hold tight! This might take a few minutes...
               </p>
-              {story.childName && (
-                <p className="text-sm text-gray-700 mt-1">
-                  <strong>For:</strong> {story.childName}
-                </p>
-              )}
+              
+              <div className="mb-6">
+                <div className="bg-gray-100 rounded-lg p-4 mb-3">
+                  <p className="text-sm text-gray-700">
+                    <strong>Story:</strong> {story.prompt}
+                  </p>
+                  {story.childName && (
+                    <p className="text-sm text-gray-700 mt-1">
+                      <strong>For:</strong> {story.childName}
+                    </p>
+                  )}
+                </div>
+                
+                <div className="space-y-2">
+                  <div className="flex items-center justify-center text-sm">
+                    <span className={`mr-2 ${story.status === 'generating_text' ? 'animate-spin' : ''}`}>
+                      {story.status === 'generating_text' ? '⏳' : '✅'}
+                    </span>
+                    <span className={story.status === 'generating_text' ? 'text-dream-blue font-semibold' : 'text-gray-500'}>
+                      Writing your story
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-center text-sm">
+                    <span className={`mr-2 ${story.status === 'generating_images' || story.status === 'generating_assets' ? 'animate-spin' : ''}`}>
+                      {story.status === 'generating_images' || story.status === 'generating_assets' ? '⏳' : 
+                       story.status === 'generating_text' || story.status === 'pending' || story.status === 'processing' ? '⏸️' : '✅'}
+                    </span>
+                    <span className={story.status === 'generating_images' || story.status === 'generating_assets' ? 'text-dream-blue font-semibold' : 'text-gray-500'}>
+                      Creating beautiful illustrations
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-center text-sm">
+                    <span className={`mr-2 ${story.status === 'generating_audio' ? 'animate-spin' : ''}`}>
+                      {story.status === 'generating_audio' ? '⏳' : 
+                       story.status === 'completed' ? '✅' : '⏸️'}
+                    </span>
+                    <span className={story.status === 'generating_audio' ? 'text-dream-blue font-semibold' : 'text-gray-500'}>
+                      Recording narration
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="animate-pulse text-xs text-gray-500">
+                We're working on making your story magical...
+              </div>
             </div>
-            <p className="text-xs text-gray-500">This usually takes 10-30 seconds</p>
           </div>
         </div>
-      </div>
-    );
+      );
+    }
+    // If we have pages, let the story display (will show pages as they're ready)
   }
 
   if (story.status === 'failed') {
