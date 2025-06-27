@@ -36,7 +36,7 @@ git push -u origin main
    NEXT_PUBLIC_APP_URL=https://babel-books-web.onrender.com
    NEXTAUTH_URL=https://babel-books-web.onrender.com
    NEXTAUTH_SECRET=[generate a secure secret]
-   MONGODB_URI=mongodb+srv://nsuvorovv22:flkitXVePO4knaiC@cluster0.mongodb.net/babel-books?retryWrites=true&w=majority
+   MONGODB_URI=mongodb+srv://YOUR_USERNAME:YOUR_PASSWORD@cluster0.wbygnpt.mongodb.net/babel-books?retryWrites=true&w=majority
    GEMINI_API_KEY=AIzaSyDIh57faYlMHNcEwbb7rpCIXpCAjXhGjH8
    AWS_ACCESS_KEY_ID=AKIAY3GLMYDF6IFHOOFO
    AWS_SECRET_ACCESS_KEY=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
@@ -66,8 +66,11 @@ git push -u origin main
 
 ## Step 4: Configure MongoDB Atlas
 
+**⚠️ Note**: The MongoDB credentials need to be verified. The cluster name appears to be `cluster0.wbygnpt.mongodb.net` based on the mongosh command provided.
+
 1. Go to MongoDB Atlas
-2. Add Render's IP addresses to the whitelist:
+2. Verify the database user credentials (username might be 'server' or 'nsuvorovv22')
+3. Add Render's IP addresses to the whitelist:
    - For development, you can temporarily allow access from anywhere (0.0.0.0/0)
    - For production, get Render's static IPs (requires paid plan)
 
