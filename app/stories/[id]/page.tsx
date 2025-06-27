@@ -3,12 +3,28 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import InteractiveStoryPage from '@/components/InteractiveStoryPage';
+import PageFlipAnimation from '@/components/PageFlipAnimation';
+import BackgroundMusic from '@/components/BackgroundMusic';
+
+interface InteractiveZone {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  type: 'sound' | 'animation' | 'visual' | 'reaction';
+  action: string;
+  label: string;
+}
 
 interface StoryPage {
   pageNumber: number;
   text: string;
   imagePrompt: string;
   interactiveElement?: string;
+  interactiveZones?: InteractiveZone[];
+  narratorNote?: string;
   image?: {
     imageData?: string; // For backward compatibility
     url?: string; // S3 URL
@@ -49,6 +65,9 @@ export default function StoryPage() {
   const [story, setStory] = useState<Story | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [pageDirection, setPageDirection] = useState<'forward' | 'backward'>('forward');
+  const [musicEnabled, setMusicEnabled] = useState(true);
+  const [autoPlay, setAutoPlay] = useState(false);
 
   useEffect(() => {
     const fetchStory = async () => {
@@ -322,13 +341,23 @@ export default function StoryPage() {
 
   const goToNextPage = () => {
     if (!isLastPage) {
+      setPageDirection('forward');
       setCurrentPage(currentPage + 1);
     }
   };
 
   const goToPreviousPage = () => {
     if (!isFirstPage) {
+      setPageDirection('backward');
       setCurrentPage(currentPage - 1);
+    }
+  };
+  
+  const handlePageComplete = () => {
+    if (autoPlay && !isLastPage) {
+      setTimeout(() => {
+        goToNextPage();
+      }, 1000); // Wait 1 second before auto-advancing
     }
   };
 
@@ -393,82 +422,71 @@ export default function StoryPage() {
         </div>
       </div>
 
+      {/* Background Music */}
+      <BackgroundMusic 
+        tone={story.tone as any}
+        enabled={musicEnabled}
+        volume={0.3}
+      />
+
       {/* Story Content */}
       <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <h1 className="font-display text-3xl font-bold text-center text-dream-blue mb-8">
-          {story.story.title}
-        </h1>
-
-        {/* Story Page */}
-        <div className="bg-white rounded-3xl shadow-xl overflow-hidden">
-          {/* Story Image */}
-          <div className="aspect-video bg-gradient-to-br from-sunshine-yellow to-coral-pink relative overflow-hidden">
-            {currentPageData.image && (currentPageData.image.url || currentPageData.image.imageData) ? (
-              <img 
-                src={
-                  currentPageData.image.url || 
-                  `data:image/${currentPageData.image.format || 'png'};base64,${currentPageData.image.imageData}`
-                }
-                alt={currentPageData.imagePrompt}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center text-white">
-                  <p className="text-6xl mb-4">🖼️</p>
-                  <p className="text-lg font-medium px-4">{currentPageData.imagePrompt}</p>
-                </div>
-              </div>
-            )}
-            
-            {/* Interactive Element Indicator */}
-            {currentPageData.interactiveElement && (
-              <div className="absolute bottom-4 right-4 bg-white bg-opacity-90 rounded-full px-4 py-2 shadow-lg">
-                <p className="text-sm font-medium text-gray-700">
-                  ✨ {currentPageData.interactiveElement}
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Text Content */}
-          <div className="p-8">
-            <p className="text-xl leading-relaxed text-gray-800 font-body">
-              {currentPageData.text}
-            </p>
-
-            {/* Audio Controls */}
-            {currentPageData.audio && (currentPageData.audio.url || currentPageData.audio.audioData) && (
-              <div className="mt-6 bg-gray-50 rounded-xl p-4">
-                <div className="flex items-center gap-4">
-                  <button
-                    onClick={() => playAudio(currentPageData.audio)}
-                    className="bg-dream-blue text-white p-3 rounded-full hover:bg-opacity-90 transition-all transform hover:scale-105"
-                    aria-label="Play narration"
-                  >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </button>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-700">Listen to the story</p>
-                    <p className="text-xs text-gray-500">Duration: {currentPageData.audio.duration}s</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Language Info */}
-            {story.textLanguage !== story.narrationLanguage && (
-              <div className="mt-4 flex items-center gap-2 text-sm text-gray-600">
-                <span>📖 Text: {story.textLanguage}</span>
-                <span>•</span>
-                <span>🔊 Narration: {story.narrationLanguage}</span>
-              </div>
-            )}
+        {/* Header with title and controls */}
+        <div className="mb-8">
+          <h1 className="font-display text-3xl font-bold text-center text-dream-blue mb-4">
+            {story.story.title}
+          </h1>
+          
+          {/* Parent Controls */}
+          <div className="flex items-center justify-center gap-4 text-sm">
+            <button
+              onClick={() => setMusicEnabled(!musicEnabled)}
+              className="flex items-center gap-2 px-3 py-1 rounded-full bg-gray-100 hover:bg-gray-200"
+              aria-label={musicEnabled ? "Mute background music" : "Enable background music"}
+            >
+              {musicEnabled ? '🎵' : '🔇'} Music
+            </button>
+            <button
+              onClick={() => setAutoPlay(!autoPlay)}
+              className="flex items-center gap-2 px-3 py-1 rounded-full bg-gray-100 hover:bg-gray-200"
+              aria-label={autoPlay ? "Disable auto-play" : "Enable auto-play"}
+            >
+              {autoPlay ? '▶️' : '⏸️'} Auto-play
+            </button>
           </div>
         </div>
+
+        {/* Story Page with Animation */}
+        <PageFlipAnimation
+          currentPage={currentPage}
+          direction={pageDirection}
+        >
+          <div className="bg-white rounded-3xl shadow-xl overflow-hidden p-8">
+            <InteractiveStoryPage
+              pageNumber={currentPageData.pageNumber}
+              text={currentPageData.text}
+              imageUrl={
+                currentPageData.image?.url || 
+                (currentPageData.image?.imageData ? 
+                  `data:image/${currentPageData.image.format || 'png'};base64,${currentPageData.image.imageData}` : 
+                  undefined)
+              }
+              imagePrompt={currentPageData.imagePrompt}
+              audioUrl={
+                currentPageData.audio?.url ||
+                (currentPageData.audio?.audioData ?
+                  `data:audio/mp3;base64,${currentPageData.audio.audioData}` :
+                  undefined)
+              }
+              audioDuration={currentPageData.audio?.duration}
+              interactiveZones={currentPageData.interactiveZones}
+              onPageComplete={handlePageComplete}
+              autoPlay={autoPlay}
+              narrationLanguage={story.narrationLanguage}
+              textLanguage={story.textLanguage}
+            />
+          </div>
+        </PageFlipAnimation>
 
         {/* Navigation */}
         <div className="mt-8 flex items-center justify-between">

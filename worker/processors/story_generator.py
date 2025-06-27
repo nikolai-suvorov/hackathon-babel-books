@@ -75,10 +75,29 @@ Format your response as JSON:
             "text": "Page text here",
             "imagePrompt": "Detailed description for illustration",
             "interactiveElement": "Optional: tap the sun to make it shine!",
-            "narratorNote": "Optional: read with excitement"
+            "narratorNote": "Optional: read with excitement",
+            "interactiveZones": [
+                {{
+                    "id": "zone1",
+                    "x": 50,
+                    "y": 30,
+                    "width": 20,
+                    "height": 20,
+                    "type": "sound",
+                    "action": "sun-sparkle",
+                    "label": "Tap the sun!"
+                }}
+            ]
         }}
     ]
-}}"""
+}}
+
+For interactiveZones:
+- x, y: center position as percentage (0-100)
+- width, height: size as percentage (0-100)
+- type: "sound" | "animation" | "visual" | "reaction"
+- Maximum 2 zones per page
+- Place zones on main story elements mentioned in interactiveElement"""
 
     try:
         # Generate with Gemini
@@ -133,7 +152,19 @@ async def generate_mock_story(prompt: str, age_group: str, tone: str, language: 
                 "pageNumber": 1,
                 "text": "Look! A happy sun!",
                 "imagePrompt": "bright yellow sun with a smiling face on white background",
-                "interactiveElement": "Tap the sun!"
+                "interactiveElement": "Tap the sun!",
+                "interactiveZones": [
+                    {
+                        "id": "sun",
+                        "x": 50,
+                        "y": 40,
+                        "width": 30,
+                        "height": 30,
+                        "type": "sound",
+                        "action": "sun-giggle",
+                        "label": "Tap the sun!"
+                    }
+                ]
             },
             {
                 "pageNumber": 2,
