@@ -8,10 +8,15 @@ const stripeConfig: Stripe.StripeConfig = {
 
 // For local development with stripe-mock
 if (process.env.STRIPE_API_BASE) {
-  const url = new URL(process.env.STRIPE_API_BASE);
-  stripeConfig.host = url.hostname;
-  stripeConfig.protocol = url.protocol.replace(':', '') as any;
-  stripeConfig.port = parseInt(url.port || '80');
+  try {
+    const url = new URL(process.env.STRIPE_API_BASE);
+    stripeConfig.host = url.hostname;
+    stripeConfig.protocol = url.protocol.replace(':', '') as any;
+    stripeConfig.port = parseInt(url.port || '80');
+  } catch (error) {
+    console.warn('Invalid STRIPE_API_BASE URL:', process.env.STRIPE_API_BASE);
+    // Don't modify stripeConfig if URL is invalid
+  }
 }
 
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_mock', stripeConfig);
