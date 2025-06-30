@@ -14,6 +14,8 @@ google-genai==1.23.0
 pydub==0.25.1
 gTTS==2.5.4
 soundfile==0.12.1
+# Note: For Python 3.13+, pydub requires audioop-lts
+audioop-lts==0.2.1; python_version >= '3.13'
 
 # Image Processing
 Pillow==11.1.0
