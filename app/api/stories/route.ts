@@ -149,6 +149,28 @@ export async function GET(request: NextRequest) {
       );
     }
     
+    // Fetch media data for pages if story has pages
+    if (story.story?.pages?.length > 0) {
+      const mediaData = await db.collection('story_media')
+        .find({ storyId: story._id })
+        .toArray();
+      
+      // Map media data to pages
+      story.story.pages = story.story.pages.map((page: any) => {
+        const pageMedia = mediaData.find(m => m.pageNumber === page.pageNumber);
+        if (pageMedia) {
+          // Add media data back to page if it exists
+          if (page.image?.hasImage && pageMedia.imageData) {
+            page.image.imageData = pageMedia.imageData;
+          }
+          if (page.audio?.hasAudio && pageMedia.audioData) {
+            page.audio.audioData = pageMedia.audioData;
+          }
+        }
+        return page;
+      });
+    }
+    
     // Check if user has access to this story
     if (session) {
       const isOwner = story.userId?.toString() === session.userId;

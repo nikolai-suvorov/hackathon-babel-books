@@ -46,24 +46,44 @@ async def save_page_progressively(
     try:
         page_doc = {**page_data}
         
-        # Store image as base64 (S3 disabled for now)
+        # For large stories, store media in separate collection to avoid 16MB limit
+        media_doc = {
+            "storyId": story_id,
+            "pageNumber": page_data['pageNumber'],
+            "createdAt": datetime.utcnow()
+        }
+        
+        # Store image data separately if it exists
         if image_data and image_data.get("imageData"):
+            media_doc["imageData"] = image_data["imageData"]
+            media_doc["imageFormat"] = image_data.get("format", "png")
+            
+            # Store reference in page doc
             page_doc["image"] = {
-                "imageData": image_data["imageData"],
+                "hasImage": True,
                 "format": image_data.get("format", "png")
             }
-            logger.info(f"Stored image for story {story_id} page {page_data['pageNumber']}")
+            logger.info(f"Storing image for story {story_id} page {page_data['pageNumber']}")
         
-        # Store audio as base64 (S3 disabled for now)
+        # Store audio data separately if it exists
         if audio_data and audio_data.get("audioData"):
+            media_doc["audioData"] = audio_data["audioData"]
+            media_doc["audioFormat"] = audio_data.get("format", "mp3")
+            media_doc["audioDuration"] = audio_data.get("duration", 0)
+            
+            # Store reference in page doc
             page_doc["audio"] = {
-                "audioData": audio_data["audioData"],
+                "hasAudio": True,
                 "format": audio_data.get("format", "mp3"),
                 "duration": audio_data.get("duration", 0)
             }
-            logger.info(f"Stored audio for story {story_id} page {page_data['pageNumber']}")
+            logger.info(f"Storing audio for story {story_id} page {page_data['pageNumber']}")
         
-        # Add page to story document
+        # Save media data if we have any
+        if "imageData" in media_doc or "audioData" in media_doc:
+            await db.story_media.insert_one(media_doc)
+        
+        # Add page to story document (without embedded media)
         await db.stories.update_one(
             {"_id": story_id},
             {

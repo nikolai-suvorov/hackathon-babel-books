@@ -32,6 +32,11 @@ export async function DELETE(
       _id: new ObjectId(storyId)
     });
     
+    // Delete associated media
+    await db.collection('story_media').deleteMany({
+      storyId: new ObjectId(storyId)
+    });
+    
     // If story was shared, remove from sharedStories
     if (story.isShared) {
       await db.collection('sharedStories').deleteOne({

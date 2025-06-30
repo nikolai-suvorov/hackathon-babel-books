@@ -36,7 +36,16 @@ async def generate_with_gemini_tts(text: str, language: str, age_group: str) -> 
         
         logger.info(f"Attempting TTS generation for {language} text")
         
-        response = await tts_model.generate_content_async(tts_prompt)
+        # Configure generation to only output audio
+        generation_config = genai.GenerationConfig(
+            temperature=0.7,
+            response_modalities=["audio"]  # Only request audio output
+        )
+        
+        response = await tts_model.generate_content_async(
+            tts_prompt,
+            generation_config=generation_config
+        )
         
         # Check for audio data in response
         if hasattr(response, '_result') and hasattr(response._result, 'candidates'):
