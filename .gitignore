@@ -41,6 +41,9 @@ next-env.d.ts
 # IDE
 .idea/
 .vscode/
+*.iml
+*.ipr
+*.iws
 
 # Python
 __pycache__/
@@ -50,9 +53,53 @@ __pycache__/
 .Python
 env/
 venv/
+worker/venv/
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+dist/
+build/
+
+# Environment files
 .env
+.env.*
+!.env.example
+!.env.*.example
+worker/.env
 
 # Local data
 localstack-data/
-test-flow.js
-test-error.png
+mongodb-data/
+*.local
+
+# Test files
+test-*.js
+test-*.py
+test_*.py
+manual-test-guide.md
+todo.md
+
+# Logs
+*.log
+logs/
+
+# Development tools
+.ruff_cache/
+.mypy_cache/
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Architecture diagrams (if temporary)
+architecture.png
+
+# Deployment scripts
+push-to-github.sh
+deploy.sh

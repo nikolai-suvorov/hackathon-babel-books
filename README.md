@@ -1,52 +1,171 @@
-# BabelBooks
+# BabelBooks - Bilingual Children's Story Generator
 
-AI-powered storytelling platform for bilingual kids aged 0-5.
+BabelBooks is an AI-powered platform that creates personalized, bilingual children's stories with custom illustrations and narration. The application uses Google's Gemini API for story generation and Imagen for creating story-specific illustrations.
+
+## Features
+
+- **Personalized Story Generation**: Creates unique stories based on prompts, child's age, name, and interests
+- **Bilingual Support**: Generates stories in multiple languages with separate text and narration languages
+- **Custom Illustrations**: AI-generated images that match the story content and maintain visual consistency
+- **Audio Narration**: Text-to-speech narration for each page
+- **Progressive Loading**: Stories are generated page-by-page for better user experience
+- **Age-Appropriate Content**: Tailored content and illustration styles for different age groups (0-6 months to 4-5 years)
+
+## Architecture
+
+The application consists of three main components:
+
+1. **Next.js Frontend**: React-based web application with TypeScript
+2. **Python Worker Service**: Handles AI generation tasks asynchronously
+3. **MongoDB**: Stores stories and manages job queues
+
+## Prerequisites
+
+- Docker and Docker Compose
+- Node.js 18+ (for local development)
+- Python 3.11+ (for local development)
+- Google Gemini API key
 
 ## Quick Start
 
-### Prerequisites
-- Node.js 20+
-- Docker
-- npm or yarn
+### 1. Clone the repository
 
-### Local Development Setup
-
-1. **Clone the repository**
 ```bash
-git clone <repo-url>
-cd hackathon-babel-books
+git clone https://github.com/yourusername/babel-books.git
+cd babel-books
 ```
 
-2. **Install dependencies**
+### 2. Set up environment variables
+
+Copy the example environment files:
+
 ```bash
+cp .env.example .env
+cp worker/.env.example worker/.env
+```
+
+Edit the `.env` files and add your credentials:
+
+- `GEMINI_API_KEY`: Your Google Gemini API key
+- MongoDB credentials (or use defaults for local development)
+
+### 3. Run with Docker Compose
+
+For development:
+
+```bash
+docker-compose up -d
+```
+
+For production:
+
+```bash
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+The application will be available at:
+- Frontend: http://localhost:3000
+- Worker API: http://localhost:8000
+
+## Development
+
+### Frontend Development
+
+```bash
+# Install dependencies
 npm install
-```
 
-3. **Start Docker services**
-```bash
-docker compose up -d
-```
-
-This starts:
-- MongoDB on `localhost:27017`
-- LocalStack (S3 mock) on `localhost:4566`
-- Stripe Mock on `localhost:12111`
-
-4. **Copy environment variables**
-```bash
-cp .env.example .env.local
-```
-
-5. **Start the development server**
-```bash
+# Run development server
 npm run dev
+
+# Run tests
+npm test
+
+# Build for production
+npm run build
 ```
 
-Visit [http://localhost:3000](http://localhost:3000)
+### Worker Development
 
-6. **Start the background worker** (in a separate terminal)
 ```bash
-npm run worker:dev
+cd worker
+
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt -r requirements-test.txt
+
+# Run tests
+pytest
+
+# Run with hot reload
+uvicorn main_progressive:app --reload --host 0.0.0.0 --port 8000
+```
+
+### Running Tests
+
+Run the complete test suite with Docker:
+
+```bash
+docker-compose -f docker-compose.test.yml up --abort-on-container-exit
+```
+
+## Configuration
+
+### Environment Variables
+
+#### Frontend (.env)
+- `MONGODB_URI`: MongoDB connection string
+- `NEXT_PUBLIC_API_URL`: Public API URL
+
+#### Worker (worker/.env)
+- `MONGODB_URI`: MongoDB connection string
+- `GEMINI_API_KEY`: Google Gemini API key
+- `USE_MOCK_STORIES`: Use mock data for testing (true/false)
+- `USE_MOCK_IMAGES`: Use placeholder images (true/false)
+- `USE_MOCK_AUDIO`: Use mock audio generation (true/false)
+
+### Age Groups
+
+The application supports the following age groups with tailored content:
+
+- **0-6 months**: 4 pages, simple shapes and colors
+- **6-18 months**: 6 pages, bright illustrations
+- **18-36 months**: 8 pages, cartoon style
+- **3-4 years**: 10 pages, detailed illustrations
+- **4-5 years**: 12 pages, whimsical storybook style
+
+## API Documentation
+
+### Create Story
+
+```http
+POST /api/stories
+Content-Type: application/json
+
+{
+  "prompt": "A brave little mouse",
+  "childAge": "3-4 years",
+  "childName": "Emma",
+  "childInterests": "dinosaurs, space",
+  "textLanguage": "en",
+  "narrationLanguage": "es",
+  "tone": "playful"
+}
+```
+
+### Get Story
+
+```http
+GET /api/stories?id={storyId}
+```
+
+### Worker Health Check
+
+```http
+GET http://localhost:8000/health
 ```
 
 ## Project Structure
@@ -59,36 +178,92 @@ npm run worker:dev
 ├── components/            # React components
 ├── lib/                   # Utilities (DB, S3, etc.)
 ├── worker/                # Background processing
+│   ├── processors/        # AI processing modules
+│   ├── tests/            # Test suite
+│   └── utils/            # Helper utilities
 ├── public/                # Static assets
-└── docker-compose.yml     # Local services
+├── docker-compose.yml     # Development services
+└── docker-compose.prod.yml # Production services
 ```
 
-## Available Scripts
+## Production Deployment
 
-- `npm run dev` - Start Next.js development server
-- `npm run build` - Build for production
-- `npm run start` - Start production server
-- `npm run worker` - Start background worker
-- `npm run worker:dev` - Start worker with hot reload
+### Using Docker
 
-## Environment Variables
+1. Build production images:
 
-See `.env.example` for all required variables. Key ones:
-- `MONGODB_URI` - MongoDB connection string
-- `GEMINI_API_KEY` - Google Gemini API key
-- `STRIPE_SECRET_KEY` - Stripe secret key
-- `AWS_*` - S3 configuration
+```bash
+docker-compose -f docker-compose.prod.yml build
+```
 
-## Architecture
+2. Set production environment variables in `.env.prod`
 
-- **Frontend**: Next.js 14 with TypeScript
-- **Backend**: Next.js API routes
-- **Database**: MongoDB
-- **File Storage**: AWS S3
-- **AI**: Google Gemini API
-- **Payments**: Stripe
-- **Background Jobs**: Custom worker using MongoDB as queue
+3. Deploy:
 
-## Deployment
+```bash
+docker-compose -f docker-compose.prod.yml up -d
+```
 
-Configured for deployment on Render.com. See `render.yaml` for configuration.
+### Security Considerations
+
+- Always use strong passwords for MongoDB in production
+- Keep your Gemini API key secure
+- Use HTTPS in production
+- Enable rate limiting for API endpoints
+- Regular security updates for dependencies
+
+## Monitoring
+
+The worker service provides basic metrics:
+
+```http
+GET http://localhost:8000/metrics
+```
+
+Returns job statistics:
+- Pending jobs
+- Processing jobs
+- Completed jobs
+- Failed jobs
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Image generation fails**: Check Gemini API key and quota
+2. **MongoDB connection errors**: Verify connection string and credentials
+3. **Stories not loading**: Check worker logs with `docker logs babel-books-worker`
+
+### Logs
+
+View logs for debugging:
+
+```bash
+# Frontend logs
+docker logs babel-books-nextjs
+
+# Worker logs
+docker logs babel-books-worker
+
+# MongoDB logs
+docker logs babel-books-mongodb
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests for new functionality
+5. Run the test suite
+6. Submit a pull request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgments
+
+- Google Gemini API for story and image generation
+- Next.js team for the excellent framework
+- FastAPI for the Python backend framework

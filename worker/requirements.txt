@@ -1,15 +1,14 @@
 # Web Framework
-fastapi==0.115.5
-uvicorn[standard]==0.32.1
-python-multipart==0.0.17
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.18
 
 # Database
-motor==3.6.0
+motor==3.7.0
 
 # AI/ML
-google-generativeai==0.8.3
-langchain==0.3.10
-langchain-google-genai==2.0.7
+google-generativeai==0.8.5
+google-genai==1.23.0
 
 # Audio Processing
 pydub==0.25.1
@@ -18,19 +17,19 @@ librosa==0.10.2.post1
 soundfile==0.12.1
 
 # Image Processing
-Pillow==11.0.0
-opencv-python==4.10.0.84
-numpy==1.26.4
+Pillow==11.1.0
+numpy==2.2.1
 
-# AWS
-boto3==1.35.72
+# AWS (optional)
+boto3==1.36.5
 
-# Utils
+# Configuration and utilities
 python-dotenv==1.0.1
-pydantic==2.10.3
+pydantic==2.10.5
+pydantic-settings==2.7.1
 httpx==0.28.1
 aiofiles==24.1.0
+aiohttp==3.11.11
 
-# Development
-pytest==8.3.4
-pytest-asyncio==0.25.0
+# Logging
+structlog==25.1.0
