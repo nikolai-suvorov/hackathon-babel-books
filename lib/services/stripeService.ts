@@ -17,13 +17,13 @@ if (process.env.STRIPE_API_BASE) {
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_mock', stripeConfig);
 
 // Mock price IDs for stripe-mock
-export const STRIPE_PRICES = {
+export const STRIPE_PRICES: Partial<Record<SubscriptionTier, string>> = {
   [SubscriptionTier.INDIVIDUAL]: process.env.STRIPE_PRICE_INDIVIDUAL || 'price_mock_individual',
   [SubscriptionTier.FAMILY]: process.env.STRIPE_PRICE_FAMILY || 'price_mock_family',
 };
 
 // Mock product IDs
-export const STRIPE_PRODUCTS = {
+export const STRIPE_PRODUCTS: Partial<Record<SubscriptionTier, string>> = {
   [SubscriptionTier.INDIVIDUAL]: 'prod_mock_individual',
   [SubscriptionTier.FAMILY]: 'prod_mock_family',
 };
@@ -159,6 +159,10 @@ export class StripeService {
   private static async getOrCreatePrice(tier: SubscriptionTier) {
     const priceId = STRIPE_PRICES[tier];
     
+    if (!priceId) {
+      throw new Error(`No price configured for tier: ${tier}`);
+    }
+    
     try {
       // Try to retrieve existing price
       return await stripe.prices.retrieve(priceId);
@@ -168,11 +172,16 @@ export class StripeService {
       
       // First create product
       let product;
+      const productId = STRIPE_PRODUCTS[tier];
+      if (!productId) {
+        throw new Error(`No product configured for tier: ${tier}`);
+      }
+      
       try {
-        product = await stripe.products.retrieve(STRIPE_PRODUCTS[tier]);
+        product = await stripe.products.retrieve(productId);
       } catch {
         product = await stripe.products.create({
-          id: STRIPE_PRODUCTS[tier],
+          id: productId,
           name: `BabelBooks ${tier.charAt(0).toUpperCase() + tier.slice(1)} Plan`,
           description: tier === SubscriptionTier.INDIVIDUAL 
             ? '15 stories per month, unlimited replays' 
@@ -180,9 +189,8 @@ export class StripeService {
         });
       }
 
-      // Create price
+      // Create price (without custom ID as Stripe doesn't support it)
       return await stripe.prices.create({
-        id: priceId,
         product: product.id,
         unit_amount: amount,
         currency: 'usd',
