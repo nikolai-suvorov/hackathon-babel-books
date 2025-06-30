@@ -13,7 +13,6 @@ google-genai==1.23.0
 # Audio Processing
 pydub==0.25.1
 gTTS==2.5.4
-librosa==0.10.2.post1
 soundfile==0.12.1
 
 # Image Processing
