@@ -44,7 +44,7 @@ services:
   worker:
     build:
       context: ./worker
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
     container_name: babel-books-worker
     volumes:
       - ./worker:/app

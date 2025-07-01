@@ -22,7 +22,7 @@ async def generate_story_images(pages: List[Dict], age_group: str, story_context
     images = []
     
     # Check if we should use mock images
-    use_mock = os.getenv("USE_MOCK_STORIES") == "true" or os.getenv("USE_MOCK_IMAGES") == "true"
+    use_mock = "false"
     
     for page in pages:
         try:

@@ -58,6 +58,8 @@ interface Story {
   };
   createdAt: string;
   updatedAt: string;
+  isShared?: boolean;
+  userId?: string;
 }
 
 export default function StoryPage() {
@@ -69,6 +71,11 @@ export default function StoryPage() {
   const [pageDirection, setPageDirection] = useState<'forward' | 'backward'>('forward');
   const [musicEnabled, setMusicEnabled] = useState(true);
   const [autoPlay, setAutoPlay] = useState(false);
+  const [showRating, setShowRating] = useState(false);
+  const [userRating, setUserRating] = useState(0);
+  const [ratingComment, setRatingComment] = useState('');
+  const [isOwner, setIsOwner] = useState(false);
+  const [storyRating, setStoryRating] = useState<{ averageRating: number; totalRatings: number } | null>(null);
 
   useEffect(() => {
     const fetchStory = async () => {
@@ -79,6 +86,25 @@ export default function StoryPage() {
         }
         const data = await response.json();
         setStory(data);
+        
+        // Check if user is the owner
+        const session = await fetch('/api/auth/session');
+        if (session.ok) {
+          const sessionData = await session.json();
+          setIsOwner(data.userId === sessionData.user?.id);
+        }
+        
+        // Fetch story rating if it's shared
+        if (data.isShared) {
+          const ratingResponse = await fetch(`/api/stories/${params.id}/rate`);
+          if (ratingResponse.ok) {
+            const ratingData = await ratingResponse.json();
+            setStoryRating({
+              averageRating: ratingData.averageRating,
+              totalRatings: ratingData.totalRatings
+            });
+          }
+        }
         
         // If story is still pending, poll for updates
         if (data.status === 'pending' || data.status === 'processing') {
@@ -548,6 +574,97 @@ export default function StoryPage() {
             <p className="text-2xl font-display font-bold text-dream-blue mb-4">
               The End! 🎉
             </p>
+            
+            {/* Show rating for shared stories if not the owner */}
+            {story.isShared && !isOwner && (
+              <div className="mb-6">
+                {!showRating ? (
+                  <button
+                    onClick={() => setShowRating(true)}
+                    className="bg-yellow-500 text-white px-6 py-3 rounded-full font-medium hover:bg-yellow-600"
+                  >
+                    ⭐ Rate This Story
+                  </button>
+                ) : (
+                  <div className="bg-white rounded-lg p-6 max-w-md mx-auto mb-4">
+                    <h3 className="text-lg font-semibold mb-3">Rate This Story</h3>
+                    <div className="flex justify-center mb-4">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          onClick={() => setUserRating(star)}
+                          className="text-3xl mx-1 transition-transform hover:scale-110"
+                        >
+                          {star <= userRating ? '⭐' : '☆'}
+                        </button>
+                      ))}
+                    </div>
+                    <textarea
+                      placeholder="Share your thoughts (optional)"
+                      value={ratingComment}
+                      onChange={(e) => setRatingComment(e.target.value)}
+                      className="w-full p-2 border rounded-lg mb-3"
+                      rows={3}
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={async () => {
+                          if (userRating === 0) {
+                            alert('Please select a rating');
+                            return;
+                          }
+                          
+                          const response = await fetch(`/api/stories/${params.id}/rate`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              rating: userRating,
+                              comment: ratingComment
+                            })
+                          });
+                          
+                          if (response.ok) {
+                            const data = await response.json();
+                            setStoryRating({
+                              averageRating: data.averageRating,
+                              totalRatings: data.totalRatings
+                            });
+                            alert('Thank you for rating!');
+                            setShowRating(false);
+                          } else {
+                            const error = await response.json();
+                            alert(error.error || 'Failed to submit rating');
+                          }
+                        }}
+                        className="flex-1 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700"
+                      >
+                        Submit Rating
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowRating(false);
+                          setUserRating(0);
+                          setRatingComment('');
+                        }}
+                        className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {/* Show current rating if available */}
+            {storyRating && storyRating.totalRatings > 0 && (
+              <div className="mb-4 text-sm text-gray-600">
+                <span className="text-yellow-500">⭐</span>
+                <span className="ml-1 font-medium">{storyRating.averageRating.toFixed(1)}</span>
+                <span className="ml-1">({storyRating.totalRatings} {storyRating.totalRatings === 1 ? 'rating' : 'ratings'})</span>
+              </div>
+            )}
+            
             <div className="flex gap-4 justify-center">
               <button
                 onClick={() => setCurrentPage(0)}

@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/contexts/AuthContext';
 
 const AGE_GROUPS = [
   { value: '0-6 months', label: '0-6 months 👶' },
@@ -31,6 +32,7 @@ const LANGUAGES = [
 
 export default function CreateStoryPage() {
   const router = useRouter();
+  const { user, loading } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     prompt: '',
@@ -41,6 +43,12 @@ export default function CreateStoryPage() {
     textLanguage: 'English',
     narrationLanguage: 'English',
   });
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,21 +65,30 @@ export default function CreateStoryPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create story');
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create story');
       }
 
       const data = await response.json();
       
       // Navigate to story page
       router.push(`/stories/${data.storyId}`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating story:', error);
-      alert('Failed to create story. Please try again.');
+      alert(error.message || 'Failed to create story. Please try again.');
       setIsLoading(false);
     }
   };
 
   const isFormValid = formData.prompt.length >= 5 && formData.childAge && formData.tone;
+
+  if (loading || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+      </div>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-soft-white to-blue-50 py-8">
